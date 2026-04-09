@@ -17,6 +17,8 @@ public class ColorOverlayRenderer: @unchecked Sendable {
     private var cachedImageOrientation: UIImage.Orientation = .up
     private var isPrepared: Bool = false
     
+    public private(set) var isPreparing: Bool = false
+    
     public var overlayColor: UIColor? {
         didSet {
             guard isPrepared, overlayColor != nil else {
@@ -76,6 +78,31 @@ public class ColorOverlayRenderer: @unchecked Sendable {
         cachedDilatedMaskTexture = nil
         cachedOutTexture = nil
         isPrepared = false
+    }
+    
+    @discardableResult
+    public func prepareForRealtimeRenderingAsync(
+        image: UIImage,
+        expandRadius: Int32 = 30
+    ) async -> Bool {
+        isPreparing = true
+        let success = await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                guard let self else {
+                    continuation.resume(returning: false)
+                    return
+                }
+                let result = self.prepareForRealtimeRendering(image: image, expandRadius: expandRadius)
+                continuation.resume(returning: result)
+            }
+        }
+        isPreparing = false
+        if success, overlayColor != nil {
+            await MainActor.run {
+                mtkView?.setNeedsDisplay()
+            }
+        }
+        return success
     }
     
     @discardableResult
