@@ -12,6 +12,7 @@
 | 导出 | `exportCurrentResult()` | 将当前预览结果编码为 UIImage |
 | 清理 | `cleanupRealtimeCache()` | 释放缓存纹理 |
 
+[效果预览]("Files/demo.gif")
 ## 架构
 
 ```
